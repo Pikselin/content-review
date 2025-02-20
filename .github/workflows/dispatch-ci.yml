@@ -1,0 +1,21 @@
+name: Dispatch CI
+
+on:
+  # At 11:55 PM UTC, only on Tuesday and Wednesday
+  schedule:
+    - cron: '55 23 * * 2,3'
+
+permissions: {}
+
+jobs:
+  dispatch-ci:
+    name: Dispatch CI
+    # Only run cron on the silverstripe account
+    if: (github.event_name == 'schedule' && github.repository_owner == 'silverstripe') || (github.event_name != 'schedule')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch CI
+        uses: silverstripe/gha-dispatch-ci@v1
