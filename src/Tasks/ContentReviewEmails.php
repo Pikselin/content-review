@@ -55,6 +55,7 @@ class ContentReviewEmails extends BuildTask
         $pagesWithInheritedReview = Page::get()
             ->filter([
                 'ContentReviewType' => 'Inherit',
+                'NextReviewDate' => null,
                 'LastEdited:LessThanOrEqual' => $reviewThreshold->Format(DBDatetime::ISO_DATETIME),
             ]);
 
@@ -69,9 +70,14 @@ class ContentReviewEmails extends BuildTask
 
         foreach ($pagesWithInheritedReview as $page) {
             if (!isset($seenIDs[$page->ID])) {
-                $mergedPages->push($page);
+                if ($page->ReviewLogs()->filter(['LastEdited:LessThanOrEqual' => $reviewThreshold->Format(DBDatetime::ISO_DATETIME)])->count() === 0) {
+                    $mergedPages->push($page);
+                }
+                
             }
         }
+
+        Debug::dump($mergedPages->count());
 
         $overduePages = $this->getOverduePagesForOwners($mergedPages);
 
