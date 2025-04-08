@@ -4,18 +4,19 @@ namespace SilverStripe\ContentReview\Tasks;
 
 use Page;
 use RuntimeException;
-use SilverStripe\ContentReview\Compatibility\ContentReviewCompatability;
-use SilverStripe\Control\Email\Email;
-use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Dev\Debug;
+use SilverStripe\ORM\SS_List;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\FieldType\DBDatetime;
-use SilverStripe\ORM\FieldType\DBField;
-use SilverStripe\ORM\SS_List;
-use SilverStripe\Security\Member;
-use SilverStripe\SiteConfig\SiteConfig;
-use SilverStripe\View\ArrayData;
 use SilverStripe\View\SSViewer;
+use SilverStripe\View\ArrayData;
+use SilverStripe\Security\Member;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\SiteConfig\SiteConfig;
+use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\ContentReview\Compatibility\ContentReviewCompatability;
 
 /**
  * Daily task to send emails to the owners of content items when the review date rolls around.
@@ -41,16 +42,43 @@ class ContentReviewEmails extends BuildTask
 
         $compatibility = ContentReviewCompatability::start();
 
-        // First grab all the pages with a custom setting
-        $pages = Page::get()
-            ->filter('NextReviewDate:LessThanOrEqual', DBDatetime::now()->URLDate());
+        // Get now and review threshold
+        $now = DBDatetime::now();
+        $config = SiteConfig::current_site_config();
+        $reviewThreshold = DBDatetime::now()->modify('-' . $config->ReviewPeriodDays . ' days');
 
-        $overduePages = $this->getOverduePagesForOwners($pages);
+        // First set: pages with custom NextReviewDate due
+        $pagesWithCustomReview = Page::get()
+            ->filter('NextReviewDate:LessThanOrEqual', $now->Format(DBDatetime::ISO_DATETIME));
+
+        // Second set: pages using inherited review type and stale enough
+        $pagesWithInheritedReview = Page::get()
+            ->filter([
+                'ContentReviewType' => 'Inherit',
+                'LastEdited:LessThanOrEqual' => $reviewThreshold->Format(DBDatetime::ISO_DATETIME),
+            ]);
+
+        // Merge results, avoiding duplicates
+        $mergedPages = new ArrayList();
+        $seenIDs = [];
+
+        foreach ($pagesWithCustomReview as $page) {
+            $mergedPages->push($page);
+            $seenIDs[$page->ID] = true;
+        }
+
+        foreach ($pagesWithInheritedReview as $page) {
+            if (!isset($seenIDs[$page->ID])) {
+                $mergedPages->push($page);
+            }
+        }
+
+        $overduePages = $this->getOverduePagesForOwners($mergedPages);
 
         // Lets send one email to one owner with all the pages in there instead of no of pages
         // of emails.
-        foreach ($overduePages as $memberID => $pages) {
-            $this->notifyOwner($memberID, $pages);
+        foreach ($overduePages as $memberID => $mergedPages) {
+            $this->notifyOwner($memberID, $mergedPages);
         }
 
         ContentReviewCompatability::done($compatibility);
