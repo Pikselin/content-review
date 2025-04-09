@@ -167,6 +167,8 @@ class ContentReviewEmails extends BuildTask
         // Get user-editable body
         $body = $this->getEmailBody($siteConfig, $templateVariables);
 
+        Debug::dump($body);
+
         // Populate mail body with fixed template
         $email->setHTMLTemplate($siteConfig->config()->get('content_review_template'));
         $email->setData(
@@ -180,6 +182,8 @@ class ContentReviewEmails extends BuildTask
             )
         );
         $email->send();
+
+        Debug::dump('email sent');
     }
 
     /**
