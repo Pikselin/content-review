@@ -3,44 +3,49 @@
 namespace SilverStripe\ContentReview\Extensions;
 
 use Exception;
-use SilverStripe\CMS\Model\SiteTree;
-use SilverStripe\ContentReview\Jobs\ContentReviewNotificationJob;
-use SilverStripe\ContentReview\Models\ContentReviewLog;
-use SilverStripe\Core\Config\Config;
-use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\CompositeField;
+use SilverStripe\ORM\DB;
+use SilverStripe\Dev\Debug;
+use SilverStripe\ORM\SS_List;
+use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Group;
 use SilverStripe\Forms\DateField;
-use SilverStripe\Forms\DateTimeField;
-use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\GridField\GridField;
-use SilverStripe\Forms\GridField\GridFieldConfig;
-use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
-use SilverStripe\Forms\GridField\GridFieldDataColumns;
-use SilverStripe\Forms\GridField\GridFieldSortableHeader;
+use SilverStripe\ORM\HasManyList;
+use SilverStripe\Security\Member;
+use SilverStripe\ORM\ManyManyList;
 use SilverStripe\Forms\HeaderField;
+use SilverStripe\Forms\HiddenField;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Security\Security;
+use SilverStripe\View\Requirements;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\ListboxField;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\OptionsetField;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Forms\DateTimeField;
+use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\ReadonlyField;
-use SilverStripe\ORM\ArrayList;
-use SilverStripe\ORM\DataExtension;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\DB;
-use SilverStripe\ORM\HasManyList;
-use SilverStripe\ORM\ManyManyList;
-use SilverStripe\ORM\FieldType\DBDate;
-use SilverStripe\ORM\FieldType\DBDatetime;
-use SilverStripe\ORM\SS_List;
-use SilverStripe\Security\Group;
-use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
-use SilverStripe\Security\PermissionProvider;
-use SilverStripe\Security\Security;
+use SilverStripe\Forms\CompositeField;
+use SilverStripe\Forms\OptionsetField;
+use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\SiteConfig\SiteConfig;
-use SilverStripe\View\Requirements;
-use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Security\PermissionProvider;
+use SilverStripe\Forms\GridField\GridFieldConfig;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
+use SilverStripe\ContentReview\Models\ContentReviewLog;
+use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
+use SilverStripe\Forms\GridField\GridFieldSortableHeader;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
+use SilverStripe\ContentReview\Extensions\SiteTreeContentReview;
+use SilverStripe\ContentReview\Jobs\ContentReviewNotificationJob;
+use SilverStripe\ContentReview\Extensions\ContentReviewDefaultSettings;
 
 /**
  * Set dates at which content needs to be reviewed and provide a report and emails to alert
@@ -462,6 +467,8 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             ),
             $notesField,
         ]);
+
+        $fields->addFieldToTab('Root.Main', HiddenField::create('UpdateLastReviewed', 'Update Last Reviewed')->setValue('0'));
     }
 
     /**
@@ -608,6 +615,21 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
                 DBDatetime::now()->getTimestamp()
             );
             $this->owner->NextReviewDate = DBDate::create()->setValue($nextReviewUnixSec)->Format('y-MM-dd');
+        }
+
+
+        // $request = Injector::inst()->get(HTTPRequest::class);
+        // $session = $request->getSession();
+
+        // Debug::dump($session->get('UpdateLastReviewed'));
+        $lastReviewed = $_COOKIE['UpdateLastReviewed'];
+        
+        if ($lastReviewed) {
+            $this->owner->LastReviewed = DBDatetime::now()->Format(DBDatetime::ISO_DATETIME);
+            // Now set the cookie to false (to reset it)
+            // setcookie('UpdateLastReviewed', 'false');
+             // Optionally, remove the cookie after using it
+            setcookie('UpdateLastReviewed', '', time() - 3600, '/');  // Expire the cookie
         }
     }
 
