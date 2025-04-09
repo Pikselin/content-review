@@ -244,7 +244,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             }
 
             if ($parent->ContentReviewType == "Custom") {
-                return $parent;
+                return $parent->getOptions();
             }
 
             if ($parent->ContentReviewType == "Disabled") {

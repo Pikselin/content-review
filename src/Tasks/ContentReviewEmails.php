@@ -77,7 +77,7 @@ class ContentReviewEmails extends BuildTask
             }
         }
 
-        Debug::dump($mergedPages->count());
+        // Debug::dump($mergedPages->count());
 
         $overduePages = $this->getOverduePagesForOwners($mergedPages);
 
@@ -167,7 +167,7 @@ class ContentReviewEmails extends BuildTask
         // Get user-editable body
         $body = $this->getEmailBody($siteConfig, $templateVariables);
 
-        Debug::dump($body);
+        // Debug::dump($body);
 
         // Populate mail body with fixed template
         $email->setHTMLTemplate($siteConfig->config()->get('content_review_template'));
@@ -183,7 +183,7 @@ class ContentReviewEmails extends BuildTask
         );
         $email->send();
 
-        Debug::dump('email sent');
+        // Debug::dump('email sent');
     }
 
     /**
