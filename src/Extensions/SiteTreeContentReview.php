@@ -517,13 +517,15 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
      */
     public function canBeReviewedBy(Member $member = null)
     {
+        
+
         if (!$this->owner->obj('NextReviewDate')->exists()) {
-            return false;
+            if ($this->owner->obj('NextReviewDate')->InFuture()) {
+                return false;
+            }
         }
 
-        if ($this->owner->obj('NextReviewDate')->InFuture()) {
-            return false;
-        }
+        
 
         $options = $this->getOptions();
 
