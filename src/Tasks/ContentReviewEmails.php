@@ -81,8 +81,6 @@ class ContentReviewEmails extends BuildTask
 
         $overduePages = $this->getOverduePagesForOwners($mergedPages);
 
-        Debug::dump($overduePages->count());
-
         // Lets send one email to one owner with all the pages in there instead of no of pages
         // of emails.
         foreach ($overduePages as $memberID => $mergedPages) {
