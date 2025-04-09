@@ -12,6 +12,7 @@
 				<% loop $Pages %>
 				<tr>
 					<td valign="top">$Title</td>
+					<td valign="top">$OwnerNames</td>
 					<td><a href="{$BaseURL}admin/pages/edit/show/$ID"><%t SilverStripe\\ContentReview\\Tasks\\ContentReviewEmails.REVIEWPAGELINK 'Review the page in the CMS' %></a><br />
 						<a href="$AbsoluteLink"><%t SilverStripe\\ContentReview\\Tasks\\ContentReviewEmails.VIEWPUBLISHEDLINK 'View this page on the website' %></a>
 					</td>
