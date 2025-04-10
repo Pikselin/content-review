@@ -617,12 +617,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             $this->owner->NextReviewDate = DBDate::create()->setValue($nextReviewUnixSec)->Format('y-MM-dd');
         }
 
-
-        // $request = Injector::inst()->get(HTTPRequest::class);
-        // $session = $request->getSession();
-
-        // Debug::dump($session->get('UpdateLastReviewed'));
-        $lastReviewed = $_COOKIE['UpdateLastReviewed'];
+        $lastReviewed = isset($_COOKIE['UpdateLastReviewed']) ? $_COOKIE['UpdateLastReviewed'] : null;
         
         if ($lastReviewed) {
             $this->owner->LastReviewed = DBDatetime::now()->Format(DBDatetime::ISO_DATETIME);
