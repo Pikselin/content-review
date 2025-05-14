@@ -105,6 +105,13 @@ jQuery.entwine('ss', ($) => {
       // Remove the "review content" bell button so users won't do it again
       $('.content-review__button-holder').remove();
 
+      // The server has updated values like LastReviewed and NextReviewDate.
+      // The simplest way to ensure the form reflects the new values is to reload the page.
+      // The delay is to allow users enough time to read the "Review successfully added" message.
+      setTimeout(function () {
+        window.location.reload();
+      }, 2000);
+
       // Handle the review submission
       return submitFn();
     },
