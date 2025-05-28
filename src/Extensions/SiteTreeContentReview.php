@@ -633,7 +633,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         $lastReviewed = isset($_COOKIE['UpdateLastReviewed']) ? $_COOKIE['UpdateLastReviewed'] : null;
 
         if ($lastReviewed) {
-            $this->owner->LastReviewed = DBDatetime::now()->Format(DBDatetime::ISO_DATETIME);
+            $this->owner->LastReviewed = DBDate::now()->Format(DBDate::ISO_DATE);
             // Now set the cookie to false (to reset it)
             // setcookie('UpdateLastReviewed', 'false');
             // Optionally, remove the cookie after using it

@@ -14,7 +14,7 @@ use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\TextareaField;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Security;
 
@@ -100,7 +100,7 @@ class ReviewContentHandler
         $notes = (!empty($data['Review']) ? $data['Review'] : _t(__CLASS__ . '.NoComments', '(no comments)'));
         $record->addReviewNote(Security::getCurrentUser(), $notes);
         $record->advanceReviewDate();
-        $record->LastReviewed = DBDatetime::now()->getValue();
+        $record->LastReviewed = DBDate::now()->getValue();
         $record->write();
 
         $request = $this->controller->getRequest();
