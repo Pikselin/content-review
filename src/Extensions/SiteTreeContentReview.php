@@ -3,6 +3,7 @@
 namespace SilverStripe\ContentReview\Extensions;
 
 use Exception;
+use SilverStripe\Forms\TextareaField;
 use SilverStripe\ORM\DB;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\SS_List;
@@ -43,7 +44,6 @@ use SilverStripe\ContentReview\Models\ContentReviewLog;
 use Symbiote\QueuedJobs\DataObjects\QueuedJobDescriptor;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
-use SilverStripe\ContentReview\Extensions\SiteTreeContentReview;
 use SilverStripe\ContentReview\Jobs\ContentReviewNotificationJob;
 use SilverStripe\ContentReview\Extensions\ContentReviewDefaultSettings;
 
@@ -70,10 +70,11 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
      */
     private static $db = [
         "ContentReviewType" => "Enum('Inherit, Disabled, Custom', 'Inherit')",
-        "ReviewPeriodDays" => "Int",
-        "NextReviewDate" => "Date",
-        "LastEditedByName" => "Varchar(255)",
-        "OwnerNames" => "Varchar(255)",
+        "ReviewPeriodDays"  => "Int",
+        "NextReviewDate"    => "Date",
+        "LastEditedByName"  => "Varchar(255)",
+        "OwnerNames"        => "Varchar(255)",
+        "ResponsibleSMEs"   => "Text"
     ];
 
     /**
@@ -95,24 +96,24 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
      */
     private static $belongs_many_many = [
         "ContentReviewGroups" => Group::class,
-        "ContentReviewUsers" => Member::class,
+        "ContentReviewUsers"  => Member::class,
     ];
 
     /**
      * @var array
      */
     private static $schedule = [
-        0 => "No automatic review date",
-        1 => "1 day",
-        7 => "1 week",
-        30 => "1 month",
-        60 => "2 months",
-        91 => "3 months",
-        121 => "4 months",
-        152 => "5 months",
-        183 => "6 months",
-        365 => "12 months",
-        730 => "24 months",
+        0    => "No automatic review date",
+        1    => "1 day",
+        7    => "1 week",
+        30   => "1 month",
+        60   => "2 months",
+        91   => "3 months",
+        121  => "4 months",
+        152  => "5 months",
+        183  => "6 months",
+        365  => "12 months",
+        730  => "24 months",
         1095 => "36 months",
     ];
 
@@ -210,7 +211,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
 
         // Failover to check on ReviewPeriodDays + LastEdited
         $nextReviewUnixSec = strtotime(' + ' . $options->ReviewPeriodDays . ' days', DBDatetime::now()->getTimestamp());
-        $date = DBDate::create('NextReviewDate');
+        $date              = DBDate::create('NextReviewDate');
         $date->setValue($nextReviewUnixSec);
         return $date;
     }
@@ -342,13 +343,13 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         Requirements::javascript('pikselin/content-review:client/dist/js/contentreview.js');
         // Display read-only version only
         if (!Permission::check("EDIT_CONTENT_REVIEW_FIELDS")) {
-            $schedule = SiteTreeContentReview::get_schedule();
+            $schedule      = SiteTreeContentReview::get_schedule();
             $contentOwners = ReadonlyField::create(
                 "ROContentOwners",
                 _t(__CLASS__ . ".CONTENTOWNERS", "Content Owners"),
                 $this->getOwnerNames()
             );
-            $nextReviewAt = DateField::create(
+            $nextReviewAt  = DateField::create(
                 'RONextReviewDate',
                 _t(__CLASS__ . ".NEXTREVIEWDATE", "Next review date"),
                 $this->owner->NextReviewDate
@@ -385,8 +386,14 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
                 $this->owner->ContentReviewType
             );
 
+            $responsibleSMEs = TextareaField::create('ResponsibleSMEs', 'Responsible SMEs')
+                ->setRows(2)
+                ->setAttribute('readonly', 'readonly')
+                ->setDescription('SMEs who are responsible for this content. They won\'t receive any automated email, but put their name and email here so they can be contacted to check the page.');
+
             $fields->addFieldsToTab("Root.ContentReview", [
-                $contentOwners,
+                $responsibleSMEs,
+                //                $contentOwners,
                 $nextReviewAt->performReadonlyTransformation(),
                 $reviewFreq,
                 $optionsFrom,
@@ -396,10 +403,10 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             return;
         }
 
-        $options = [];
+        $options             = [];
         $options["Disabled"] = _t(__CLASS__ . ".DISABLE", "Disable content review");
-        $options["Inherit"] = _t(__CLASS__ . ".INHERIT", "Inherit from parent page");
-        $options["Custom"] = _t(__CLASS__ . ".CUSTOM", "Custom settings");
+        $options["Inherit"]  = _t(__CLASS__ . ".INHERIT", "Inherit from parent page");
+        $options["Custom"]   = _t(__CLASS__ . ".CUSTOM", "Custom settings");
 
         $viewersOptionsField = OptionsetField::create(
             "ContentReviewType",
@@ -451,20 +458,27 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             GridFieldConfig_RecordEditor::create()
         );
 
+        $responsibleSMEs = TextareaField::create('ResponsibleSMEs', 'Responsible SMEs')
+            ->setRows(3)
+            ->setDescription('SMEs who are responsible for this content. They won\'t receive any automated email, but put their name and email here so they can be contacted to check the page.');
+
+        $owners = ReadonlyField::create(
+            "ROContentOwners",
+            _t(__CLASS__ . ".CONTENTOWNERS", "Content Owners"),
+            $this->getOwnerNames()
+        );
+
         $fields->addFieldsToTab("Root.ContentReview", [
             HeaderField::create('ContentReviewHeader', _t(__CLASS__ . ".REVIEWHEADER", "Content review"), 2),
             $viewersOptionsField,
             CompositeField::create(
-                $userField,
-                $groupField,
+//                $userField,
+//                $groupField,
+                $responsibleSMEs,
                 $reviewDate,
                 $reviewFrequency
             )->addExtraClass("review-settings"),
-            ReadonlyField::create(
-                "ROContentOwners",
-                _t(__CLASS__ . ".CONTENTOWNERS", "Content Owners"),
-                $this->getOwnerNames()
-            ),
+            //            $owners,
             $notesField,
         ]);
 
@@ -479,8 +493,8 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
      */
     public function addReviewNote(Member $reviewer, $message)
     {
-        $reviewLog = ContentReviewLog::create();
-        $reviewLog->Note = $message;
+        $reviewLog             = ContentReviewLog::create();
+        $reviewLog->Note       = $message;
         $reviewLog->ReviewerID = $reviewer->ID;
         $this->owner->ReviewLogs()->add($reviewLog);
     }
@@ -495,7 +509,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
     public function advanceReviewDate()
     {
         $nextDateTimestamp = false;
-        $options = $this->getOptions();
+        $options           = $this->getOptions();
 
         if ($options && $options->ReviewPeriodDays) {
             $nextDateTimestamp = strtotime(
@@ -524,7 +538,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
      */
     public function canBeReviewedBy(Member $member = null)
     {
-        
+
 
         if (!$this->owner->obj('NextReviewDate')->exists()) {
             if ($this->owner->obj('NextReviewDate')->InFuture()) {
@@ -532,7 +546,6 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             }
         }
 
-        
 
         $options = $this->getOptions();
 
@@ -581,7 +594,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         $changedFields = $this->owner->getChangedFields(true, 2);
         if ($changedFields) {
             $this->owner->LastEditedByName = $this->owner->getEditorName();
-            $this->owner->OwnerNames = $this->owner->getOwnerNames();
+            $this->owner->OwnerNames       = $this->owner->getOwnerNames();
         }
 
         // If the user changed the type, we need to recalculate the review date.
@@ -610,7 +623,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         // parent page change its review period
         // && !$this->owner->isChanged('ContentReviewType', 2)
         if ($this->owner->isChanged('ReviewPeriodDays', 2)) {
-            $nextReviewUnixSec = strtotime(
+            $nextReviewUnixSec           = strtotime(
                 ' + ' . $this->owner->ReviewPeriodDays . ' days',
                 DBDatetime::now()->getTimestamp()
             );
@@ -618,12 +631,12 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         }
 
         $lastReviewed = isset($_COOKIE['UpdateLastReviewed']) ? $_COOKIE['UpdateLastReviewed'] : null;
-        
+
         if ($lastReviewed) {
             $this->owner->LastReviewed = DBDatetime::now()->Format(DBDatetime::ISO_DATETIME);
             // Now set the cookie to false (to reset it)
             // setcookie('UpdateLastReviewed', 'false');
-             // Optionally, remove the cookie after using it
+            // Optionally, remove the cookie after using it
             setcookie('UpdateLastReviewed', '', time() - 3600, '/');  // Expire the cookie
         }
     }
@@ -641,7 +654,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         }
 
         $this->owner->NextReviewDate = null;
-        $nextDate = $this->getReviewDate();
+        $nextDate                    = $this->getReviewDate();
 
         if (is_object($nextDate)) {
             $this->owner->NextReviewDate = $nextDate->getValue();
@@ -657,7 +670,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             return;
         }
 
-        $options = $this->getOptions();
+        $options  = $this->getOptions();
         $nextDate = null;
 
         if ($options instanceof SiteTree) {
@@ -701,8 +714,8 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
                 return;
             }
 
-            $nextRun = Injector::inst()->create(ContentReviewNotificationJob::class);
-            $runHour = Config::inst()->get(ContentReviewNotificationJob::class, "first_run_hour");
+            $nextRun      = Injector::inst()->create(ContentReviewNotificationJob::class);
+            $runHour      = Config::inst()->get(ContentReviewNotificationJob::class, "first_run_hour");
             $firstRunTime = date(
                 "Y-m-d H:i:s",
                 mktime($runHour ?? 0, 0, 0, date("m"), date("d") + 1, date("y"))
