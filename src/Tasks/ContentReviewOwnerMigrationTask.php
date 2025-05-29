@@ -11,6 +11,7 @@ use SilverStripe\ORM\DB;
  */
 class ContentReviewOwnerMigrationTask extends BuildTask
 {
+    protected $enabled = false;
     /**
      * @param HTTPRequest $request
      */

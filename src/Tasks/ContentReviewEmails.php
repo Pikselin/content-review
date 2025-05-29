@@ -23,6 +23,10 @@ use SilverStripe\ContentReview\Compatibility\ContentReviewCompatability;
  */
 class ContentReviewEmails extends BuildTask
 {
+    protected $title = 'Content Review: Send emails';
+
+    protected $description = 'Daily task to send emails to the owners of content items when the review date rolls around.';
+
     private array $invalid_emails = [];
 
     /**
@@ -39,6 +43,7 @@ class ContentReviewEmails extends BuildTask
                 )
             );
         }
+        echo 'Emails sent from: ' . $senderEmail . '<br />';
 
         $compatibility = ContentReviewCompatability::start();
 
@@ -73,7 +78,6 @@ class ContentReviewEmails extends BuildTask
                 if ($page->ReviewLogs()->filter(['LastEdited:LessThanOrEqual' => $reviewThreshold->Format(DBDatetime::ISO_DATETIME)])->count() === 0) {
                     $mergedPages->push($page);
                 }
-                
             }
         }
 
@@ -168,6 +172,11 @@ class ContentReviewEmails extends BuildTask
         $body = $this->getEmailBody($siteConfig, $templateVariables);
 
         // Debug::dump($body);
+        echo sprintf('%d %s that need to be reviewed, sent to: %s<br />',
+            $pages->Count(),
+            $pages->Count() === 1 ? 'page' : 'pages',
+            $owner->Email
+        );
 
         // Populate mail body with fixed template
         $email->setHTMLTemplate($siteConfig->config()->get('content_review_template'));
