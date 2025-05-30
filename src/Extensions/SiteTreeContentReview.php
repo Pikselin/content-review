@@ -481,8 +481,6 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             //            $owners,
             $notesField,
         ]);
-
-        $fields->addFieldToTab('Root.Main', HiddenField::create('UpdateLastReviewed', 'Update Last Reviewed')->setValue('0'));
     }
 
     /**
@@ -628,16 +626,6 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
                 DBDatetime::now()->getTimestamp()
             );
             $this->owner->NextReviewDate = DBDate::create()->setValue($nextReviewUnixSec)->Format('y-MM-dd');
-        }
-
-        $lastReviewed = isset($_COOKIE['UpdateLastReviewed']) ? $_COOKIE['UpdateLastReviewed'] : null;
-
-        if ($lastReviewed) {
-            $this->owner->LastReviewed = date('Y-m-d');
-            // Now set the cookie to false (to reset it)
-            // setcookie('UpdateLastReviewed', 'false');
-            // Optionally, remove the cookie after using it
-            setcookie('UpdateLastReviewed', '', time() - 3600, '/');  // Expire the cookie
         }
     }
 
