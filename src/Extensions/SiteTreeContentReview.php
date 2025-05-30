@@ -406,7 +406,7 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
         $options             = [];
         $options["Disabled"] = _t(__CLASS__ . ".DISABLE", "Disable content review");
         $options["Inherit"]  = _t(__CLASS__ . ".INHERIT", "Inherit from parent page");
-        $options["Custom"]   = _t(__CLASS__ . ".CUSTOM", "Custom settings");
+        //$options["Custom"]   = _t(__CLASS__ . ".CUSTOM", "Custom settings");
 
         $viewersOptionsField = OptionsetField::create(
             "ContentReviewType",
