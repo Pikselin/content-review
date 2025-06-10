@@ -25,11 +25,24 @@
           </td>
         </tr>
         <tr>
+          <td colspan="3">
+			<% if $isReviewDueByNextReviewDate %>
+				<p>Review is due because the Next Review Date has passed.</p>
+			<% else_if $isReviewDueByLastEditedAge %>
+				<p>Review is due because this page was last edited more than $SiteConfig.ReviewPeriodDays days ago.</p>
+			<% end_if %>
+          </td>
+        </tr>
+		<area>
 			<td colspan="3">
 				<table cellpadding="2" >
 					<tr>
 						<td valign="top">Owner(s):</td>
 						<td>$OwnerNames</td>
+					</tr>
+					<tr>
+						<td valign="top">Last Edited:</td>
+						<td>$LastEdited.Nice</td>
 					</tr>
 					<tr>
 						<td valign="top">Last Reviewed:</td>

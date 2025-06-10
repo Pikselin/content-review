@@ -717,4 +717,33 @@ class SiteTreeContentReview extends DataExtension implements PermissionProvider
             DB::alteration_message(sprintf("Added ContentReviewNotificationJob to run at %s", $firstRunTime));
         }
     }
+
+    /**
+     * Returns true if the page is overdue based on NextReviewDate being in the past.
+     * This mimics the logic in Tasks/ContentReviewEmails.php.
+     */
+    public function isReviewDueByNextReviewDate(): bool
+    {
+        $nextReview = $this->owner->obj('NextReviewDate');
+
+        return $nextReview->exists() && strtotime($nextReview->getValue()) <= DBDatetime::now()->getTimestamp();
+    }
+
+    /**
+     * Returns true if the page is overdue based on LastEdited + ReviewPeriodDays,
+     * and doesn't have a NextReviewDate set. This mimics the logic in Tasks/ContentReviewEmails.php.
+     */
+
+    public function isReviewDueByLastEditedAge(): bool
+    {
+        if ($this->owner->ContentReviewType !== 'Inherit') {
+            return false;
+        }
+
+        $config = SiteConfig::current_site_config();
+        $reviewThreshold = DBDatetime::now()->modify('-' . $config->ReviewPeriodDays . ' days');
+        $lastEdited = $this->owner->obj('LastEdited');
+
+        return $lastEdited->exists() && strtotime($lastEdited->getValue()) <= $reviewThreshold->getTimestamp();
+    }
 }
